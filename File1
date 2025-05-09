@@ -1,0 +1,50 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- Step 1: Sample Rainfall Data (mm/day) ---
+data = {
+    'Date': pd.date_range(start='2023-09-01', periods=10, freq='D'),
+    'Rainfall_mm': [5, 12, 50, 80, 30, 0, 100, 60, 0, 25]  # Example daily rainfall
+}
+
+df = pd.DataFrame(data)
+
+# --- Step 2: Define the Curve Number (CN) ---
+CN = 85  # CN values range from 30 to 100 depending on land use/soil type
+
+# --- Step 3: Calculate Potential Maximum Retention (S) ---
+S = (25400 / CN) - 254  # S in mm
+
+# --- Step 4: Compute Initial Abstraction (Ia) ---
+Ia = 0.2 * S
+
+# --- Step 5: Compute Runoff using SCS Curve Number Method ---
+def scs_runoff(P):
+    if P <= Ia:
+        return 0
+    else:
+        return ((P - Ia) ** 2) / (P - Ia + S)
+
+df['Runoff_mm'] = df['Rainfall_mm'].apply(scs_runoff)
+
+# --- Step 6: Flag Flood Risk (e.g., if runoff > 30 mm) ---
+flood_threshold = 30
+df['Flood_Risk'] = df['Runoff_mm'].apply(lambda x: 'High' if x > flood_threshold else 'Low')
+
+# --- Step 7: Plot Rainfall and Runoff ---
+plt.figure(figsize=(10, 6))
+plt.plot(df['Date'], df['Rainfall_mm'], label='Rainfall (mm)', marker='o')
+plt.plot(df['Date'], df['Runoff_mm'], label='Runoff (mm)', marker='x')
+plt.axhline(flood_threshold, color='r', linestyle='--', label='Flood Risk Threshold')
+plt.title('Rainfall-Runoff Modeling for Flood Risk')
+plt.xlabel('Date')
+plt.ylabel('Depth (mm)')
+plt.legend()
+plt.grid(True)
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# --- Step 8: Show Table ---
+print(df)
